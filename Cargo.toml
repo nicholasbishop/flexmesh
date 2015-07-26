@@ -1,0 +1,4 @@
+[package]
+name = "flexmesh"
+version = "0.1.0"
+authors = ["Nicholas Bishop <nicholasbishop@gmail.com>"]
