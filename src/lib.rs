@@ -5,6 +5,7 @@ mod key;
 mod rangeset;
 
 use key::Key;
+use rangeset::{Range, RangeSet};
 use std::collections::HashMap;
 
 pub type VKey = Key;
@@ -19,8 +20,7 @@ pub struct Mesh {
     loops: HashMap<LKey, Loop>,
     faces: HashMap<FKey, Face>,
 
-    // TODO
-    next_vkey: u32
+    vert_range_set: RangeSet
 }
 
 impl Mesh {
@@ -32,16 +32,19 @@ impl Mesh {
             faces: HashMap::new(),
 
             // TODO
-            next_vkey: 0
+            vert_range_set: RangeSet::new(Range::new(0, 0xffffffff - 1))
         }
     }
 
-    pub fn add_vert(&mut self) -> VKey {
+    pub fn add_vert(&mut self) -> Option<VKey> {
         let v = Vert { edge: Key::invalid() };
-        let vkey = VKey::new(self.next_vkey);
-        self.verts.insert(vkey, v);
-        self.next_vkey += 1;
-        vkey
+        if let Some(val) = self.vert_range_set.take_any_one() {
+            let vkey = VKey::new(val);
+            self.verts.insert(vkey, v);
+            Some(vkey)
+        } else {
+            None
+        }
     }
 }
 
@@ -66,6 +69,14 @@ pub struct Face {
     first_loop: LKey
 }
 
-#[test]
-fn it_works() {
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_add_vert() {
+        let mut mesh = Mesh::new();
+        assert_eq!(mesh.add_vert().is_some(), true);
+        assert_eq!(mesh.verts.is_empty(), false);
+    }
 }
