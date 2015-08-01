@@ -38,6 +38,8 @@ impl Mesh {
         }
     }
 
+    /// Add a new isolated vertex and return its key. Fail and return
+    /// None if there are no more vertex keys available.
     pub fn add_vert(&mut self) -> Option<VKey> {
         if let Some(val) = self.vert_range_set.take_any_one() {
             let vkey = VKey::new(val);
@@ -51,14 +53,18 @@ impl Mesh {
     pub fn add_edge(&mut self, v0: VKey, v1: VKey) -> Option<EKey> {
         // TODO(nicholasbishop): check that the verts are in the mesh,
         // are not the same vert, and that the edge doesn't exist yet.
-        if let Some(val) = self.edge_range_set.take_any_one() {
-            let ekey = EKey::new(val);
-            self.verts.get_mut(&v0).unwrap().edges.push(ekey);
-            self.verts.get_mut(&v1).unwrap().edges.push(ekey);
-            self.edges.insert(ekey, Edge { verts: [v0, v1] });
-            Some(ekey)
-        } else {
+        if v0 == v1 {
             None
+        } else {
+            if let Some(val) = self.edge_range_set.take_any_one() {
+                let ekey = EKey::new(val);
+                self.verts.get_mut(&v0).unwrap().edges.push(ekey);
+                self.verts.get_mut(&v1).unwrap().edges.push(ekey);
+                self.edges.insert(ekey, Edge { verts: [v0, v1] });
+                Some(ekey)
+            } else {
+                None
+            }
         }
     }
 }
@@ -100,8 +106,17 @@ mod test {
         let mut mesh = Mesh::new();
         let a = mesh.add_vert().unwrap();
         let b = mesh.add_vert().unwrap();
+
+        // Add a valid edge
         let e = mesh.add_edge(a, b).unwrap();
         assert!(mesh.verts[&a].edges.contains(&e));
         assert!(mesh.verts[&b].edges.contains(&e));
+
+        // Edge from a vertex to the same vertex
+        assert!(mesh.add_edge(a, a).is_none());
+
+        // Duplicate edge
+        assert_eq!(mesh.add_edge(a, b).unwrap(), e);
+        assert_eq!(mesh.add_edge(b, a).unwrap(), e);
     }
 }
