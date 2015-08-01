@@ -41,18 +41,21 @@ impl Mesh {
     pub fn add_vert(&mut self) -> Option<VKey> {
         if let Some(val) = self.vert_range_set.take_any_one() {
             let vkey = VKey::new(val);
-            self.verts.insert(vkey, Vert { edge: Key::invalid() });
+            self.verts.insert(vkey, Vert { edges: Vec::new() });
             Some(vkey)
         } else {
             None
         }
     }
 
-    pub fn add_edge(&mut self, verts: [VKey; 2]) -> Option<EKey> {
-        // TODO(nicholasbishop): check that the verts are valid
+    pub fn add_edge(&mut self, v0: VKey, v1: VKey) -> Option<EKey> {
+        // TODO(nicholasbishop): check that the verts are in the mesh,
+        // are not the same vert, and that the edge doesn't exist yet.
         if let Some(val) = self.edge_range_set.take_any_one() {
             let ekey = EKey::new(val);
-            self.edges.insert(ekey, Edge { verts: verts });
+            self.verts.get_mut(&v0).unwrap().edges.push(ekey);
+            self.verts.get_mut(&v1).unwrap().edges.push(ekey);
+            self.edges.insert(ekey, Edge { verts: [v0, v1] });
             Some(ekey)
         } else {
             None
@@ -61,7 +64,7 @@ impl Mesh {
 }
 
 pub struct Vert {
-    edge: EKey
+    edges: Vec<EKey>
 }
 
 pub struct Edge {
@@ -88,7 +91,17 @@ mod test {
     #[test]
     fn test_add_vert() {
         let mut mesh = Mesh::new();
-        assert_eq!(mesh.add_vert().is_some(), true);
-        assert_eq!(mesh.verts.is_empty(), false);
+        assert!(mesh.add_vert().is_some());
+        assert!(!mesh.verts.is_empty());
+    }
+
+    #[test]
+    fn test_add_edge() {
+        let mut mesh = Mesh::new();
+        let a = mesh.add_vert().unwrap();
+        let b = mesh.add_vert().unwrap();
+        let e = mesh.add_edge(a, b).unwrap();
+        assert!(mesh.verts[&a].edges.contains(&e));
+        assert!(mesh.verts[&b].edges.contains(&e));
     }
 }
