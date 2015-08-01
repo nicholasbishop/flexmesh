@@ -38,29 +38,41 @@ impl Mesh {
         }
     }
 
+    /// Return the edge between two verts, or None if no such edge
+    /// exists.
+    pub fn find_edge(&self, vk0: VKey, vk1: VKey) -> Option<EKey> {
+        for ek in self.verts[&vk0].edges.iter() {
+            if self.edges[ek].is_vert_adjacent(vk1) {
+                return Some(*ek)
+            }
+        }
+        None
+    }
+
     /// Add a new isolated vertex and return its key. Fail and return
     /// None if there are no more vertex keys available.
     pub fn add_vert(&mut self) -> Option<VKey> {
         if let Some(val) = self.vert_range_set.take_any_one() {
             let vkey = VKey::new(val);
-            self.verts.insert(vkey, Vert { edges: Vec::new() });
+            self.verts.insert(vkey, Vert::new());
             Some(vkey)
         } else {
             None
         }
     }
 
-    pub fn add_edge(&mut self, v0: VKey, v1: VKey) -> Option<EKey> {
+    pub fn add_edge(&mut self, vk0: VKey, vk1: VKey) -> Option<EKey> {
         // TODO(nicholasbishop): check that the verts are in the mesh,
-        // are not the same vert, and that the edge doesn't exist yet.
-        if v0 == v1 {
+        if vk0 == vk1 {
             None
+        } else if let Some(ek) = self.find_edge(vk0, vk1) {
+            Some(ek)
         } else {
             if let Some(val) = self.edge_range_set.take_any_one() {
                 let ekey = EKey::new(val);
-                self.verts.get_mut(&v0).unwrap().edges.push(ekey);
-                self.verts.get_mut(&v1).unwrap().edges.push(ekey);
-                self.edges.insert(ekey, Edge { verts: [v0, v1] });
+                self.verts.get_mut(&vk0).unwrap().edges.push(ekey);
+                self.verts.get_mut(&vk1).unwrap().edges.push(ekey);
+                self.edges.insert(ekey, Edge { verts: [vk0, vk1] });
                 Some(ekey)
             } else {
                 None
@@ -73,9 +85,34 @@ pub struct Vert {
     edges: Vec<EKey>
 }
 
+impl Vert {
+    fn new() -> Vert {
+        Vert { edges: Vec::new() }
+    }
+
+    /// Check if the edge is in the set of edges adjacent to this vert.
+    pub fn is_edge_adjacent(&self, ek: EKey) -> bool {
+        self.edges.contains(&ek)
+    }
+
+    /// Add edge to set of edges adjacent to the vert. Does nothing if
+    /// the edge is already in the set.
+    fn push_edge(&mut self, ek: EKey) {
+        if !self.is_edge_adjacent(ek) {
+            self.edges.push(ek);
+        }
+    }
+}
+
 pub struct Edge {
     verts: [VKey; 2],
     // faces: Vec<FKey>
+}
+
+impl Edge {
+    fn is_vert_adjacent(&self, vk: VKey) -> bool {
+        self.verts.contains(&vk)
+    }
 }
 
 pub struct Loop {
