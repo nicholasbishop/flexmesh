@@ -21,7 +21,8 @@ pub struct Mesh {
     faces: HashMap<FKey, Face>,
 
     vert_range_set: RangeSet,
-    edge_range_set: RangeSet
+    edge_range_set: RangeSet,
+    face_range_set: RangeSet
 }
 
 impl Mesh {
@@ -34,7 +35,8 @@ impl Mesh {
 
             // TODO
             vert_range_set: RangeSet::new(Range::new(0, 0xffffffff - 1)),
-            edge_range_set: RangeSet::new(Range::new(0, 0xffffffff - 1))
+            edge_range_set: RangeSet::new(Range::new(0, 0xffffffff - 1)),
+            face_range_set: RangeSet::new(Range::new(0, 0xffffffff - 1))
         }
     }
 
@@ -81,7 +83,20 @@ impl Mesh {
     }
 
     pub fn add_face(&mut self, vk: &[VKey]) -> Option<FKey> {
-        unimplemented!();
+        let mut loops = Vec::with_capacity(vk.len());
+        for i in 0..vk.len() {
+            let vk0 = vk[i];
+            let vk1 = vk[if i < (vk.len() - 1) { i + 1 } else { 0 }];
+            let ek = self.add_edge(vk0, vk1);
+            loops.push(Loop { vert: vk0, edge: ek.unwrap() });
+        }
+        if let Some(val) = self.face_range_set.take_any_one() {
+            let fk = FKey::new(val);
+            self.faces.insert(fk, Face::new(loops));
+            Some(fk)
+        } else {
+            None
+        }
     }
 }
 
@@ -120,15 +135,18 @@ impl Edge {
 }
 
 pub struct Loop {
-    next: LKey,
     vert: VKey,
     edge: EKey,
-    face: FKey
 }
 
 pub struct Face {
-    len: FaceLen,
-    first_loop: LKey
+    loops: Vec<Loop>
+}
+
+impl Face {
+    fn new(loops: Vec<Loop>) -> Face {
+        Face { loops: loops }
+    }
 }
 
 #[cfg(test)]
