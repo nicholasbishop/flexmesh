@@ -79,6 +79,10 @@ impl Mesh {
             }
         }
     }
+
+    pub fn add_face(&mut self, vk: &[VKey]) -> Option<FKey> {
+        unimplemented!();
+    }
 }
 
 pub struct Vert {
@@ -149,11 +153,22 @@ mod test {
         assert!(mesh.verts[&a].edges.contains(&e));
         assert!(mesh.verts[&b].edges.contains(&e));
 
-        // Edge from a vertex to the same vertex
+        // Edge from a vertex to the same vertex is not allowed
         assert!(mesh.add_edge(a, a).is_none());
 
-        // Duplicate edge
+        // Duplicate edge should return the existing edge
         assert_eq!(mesh.add_edge(a, b).unwrap(), e);
         assert_eq!(mesh.add_edge(b, a).unwrap(), e);
+    }
+
+    #[test]
+    fn test_add_face() {
+        let mut mesh = Mesh::new();
+        let a = mesh.add_vert().unwrap();
+        let b = mesh.add_vert().unwrap();
+        let c = mesh.add_vert().unwrap();
+
+        // Add a valid triangle
+        let f = mesh.add_face(&[a, b, c]).unwrap();
     }
 }
