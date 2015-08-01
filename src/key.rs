@@ -1,6 +1,8 @@
+pub type NumType = u32;
+
 #[derive(Clone, Copy, Eq, Debug, Hash, PartialEq)]
 pub struct Key {
-    ival: u32
+    ival: NumType
 }
 
 impl Key {
@@ -8,7 +10,7 @@ impl Key {
         Key { ival: 0xffffffff }
     }
 
-    pub fn new(val: u32) -> Key {
+    pub fn new(val: NumType) -> Key {
         Key { ival: val }
     }
 
@@ -16,7 +18,7 @@ impl Key {
         self.ival == 0xffffffff
     }
 
-    pub fn value(&self) -> u32 {
+    pub fn value(&self) -> NumType {
         if self.valid() {
             self.ival
         } else {

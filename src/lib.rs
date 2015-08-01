@@ -20,7 +20,8 @@ pub struct Mesh {
     loops: HashMap<LKey, Loop>,
     faces: HashMap<FKey, Face>,
 
-    vert_range_set: RangeSet
+    vert_range_set: RangeSet,
+    edge_range_set: RangeSet
 }
 
 impl Mesh {
@@ -32,16 +33,27 @@ impl Mesh {
             faces: HashMap::new(),
 
             // TODO
-            vert_range_set: RangeSet::new(Range::new(0, 0xffffffff - 1))
+            vert_range_set: RangeSet::new(Range::new(0, 0xffffffff - 1)),
+            edge_range_set: RangeSet::new(Range::new(0, 0xffffffff - 1))
         }
     }
 
     pub fn add_vert(&mut self) -> Option<VKey> {
-        let v = Vert { edge: Key::invalid() };
         if let Some(val) = self.vert_range_set.take_any_one() {
             let vkey = VKey::new(val);
-            self.verts.insert(vkey, v);
+            self.verts.insert(vkey, Vert { edge: Key::invalid() });
             Some(vkey)
+        } else {
+            None
+        }
+    }
+
+    pub fn add_edge(&mut self, verts: [VKey; 2]) -> Option<EKey> {
+        // TODO(nicholasbishop): check that the verts are valid
+        if let Some(val) = self.edge_range_set.take_any_one() {
+            let ekey = EKey::new(val);
+            self.edges.insert(ekey, Edge { verts: verts });
+            Some(ekey)
         } else {
             None
         }
@@ -54,7 +66,7 @@ pub struct Vert {
 
 pub struct Edge {
     verts: [VKey; 2],
-    faces: Vec<FKey>
+    // faces: Vec<FKey>
 }
 
 pub struct Loop {
