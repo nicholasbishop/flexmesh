@@ -59,6 +59,20 @@ impl<VData: Clone, EData: Clone, FData: Clone> Mesh<VData, EData, FData> {
         None
     }
 
+    /// Get all faces adjacent to the specified vertex. The order is
+    /// arbitrary.
+    pub fn vert_adjacent_faces(&self, vk: VKey) -> Vec<FKey> {
+        let mut adj = Vec::new();
+        for ek in self.verts[&vk].edges.iter() {
+            for fk in self.edges[ek].faces.iter() {
+                if !adj.contains(fk) {
+                    adj.push(*fk);
+                }
+            }
+        }
+        adj
+    }
+
     /// Add a new isolated vertex and return its key. Fail and return
     /// None if there are no more vertex keys available.
     pub fn add_vert(&mut self, vdata: VData) -> Option<VKey> {
@@ -236,5 +250,23 @@ mod test {
 
         // Add an invalid triangle with invalid edge
         assert!(mesh.add_face(&[a, b, b], DAT, DAT).is_none());
+    }
+
+    #[test]
+    fn test_vert_adjacent_faces() {
+        // Create a bow-tie mesh
+        let mut mesh = Mesh::new();
+        let middle = mesh.add_vert(DAT).unwrap();
+        let l0 = mesh.add_vert(DAT).unwrap();
+        let l1 = mesh.add_vert(DAT).unwrap();
+        let r0 = mesh.add_vert(DAT).unwrap();
+        let r1 = mesh.add_vert(DAT).unwrap();
+        let fk0 = mesh.add_face(&[middle, l0, l1], DAT, DAT).unwrap();
+        let fk1 = mesh.add_face(&[middle, r0, r1], DAT, DAT).unwrap();
+
+        let adj = mesh.vert_adjacent_faces(middle);
+        assert_eq!(adj.len(), 2);
+        assert!(adj.contains(&fk0));
+        assert!(adj.contains(&fk1));
     }
 }
