@@ -16,6 +16,10 @@ pub type EKey = Key<EKeyMarker>;
 pub type FKey = Key<FKeyMarker>;
 pub type FaceLen = u32;
 
+/// Editable mesh with persistent adjacency data. Modeled loosely
+/// after Blender's BMesh:
+///
+/// http://wiki.blender.org/index.php/Dev:2.6/Source/Modeling/BMesh/Design
 pub struct Mesh<VData, EData, FData> {
     verts: HashMap<VKey, Vert<VData>>,
     edges: HashMap<EKey, Edge<EData>>,
