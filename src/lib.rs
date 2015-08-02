@@ -269,4 +269,19 @@ mod test {
         assert!(adj.contains(&fk0));
         assert!(adj.contains(&fk1));
     }
+
+    #[test]
+    fn test_ngon() {
+        let mut mesh = Mesh::new();
+        let a = mesh.add_vert(DAT).unwrap();
+        let b = mesh.add_vert(DAT).unwrap();
+        let c = mesh.add_vert(DAT).unwrap();
+        let d = mesh.add_vert(DAT).unwrap();
+        let e = mesh.add_vert(DAT).unwrap();
+
+        let fk = mesh.add_face(&[a, b, c, d, e], DAT, DAT).unwrap();
+        let face = &mesh.faces[&fk];
+
+        assert_eq!(face.loops.len(), 5);
+    }
 }
