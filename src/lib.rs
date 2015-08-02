@@ -188,5 +188,9 @@ mod test {
 
         // Add a valid triangle
         let f = mesh.add_face(&[a, b, c]).unwrap();
+        // TODO(nicholasbishop): check adj
+
+        // Add an invalid triangle with duplicate vertex
+        assert!(mesh.add_face(&[a, b, b]).is_none());
     }
 }
