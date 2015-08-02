@@ -16,9 +16,9 @@ pub type EKey = Key<EKeyMarker>;
 pub type FKey = Key<FKeyMarker>;
 pub type FaceLen = u32;
 
-pub struct Mesh {
-    verts: HashMap<VKey, Vert>,
-    edges: HashMap<EKey, Edge>,
+pub struct Mesh<VData, EData> {
+    verts: HashMap<VKey, Vert<VData>>,
+    edges: HashMap<EKey, Edge<EData>>,
     faces: HashMap<FKey, Face>,
 
     vert_range_set: RangeSet,
@@ -31,8 +31,8 @@ fn new_key_range_set() -> RangeSet {
     RangeSet::new(Range::new(0, 0xffffffff - 1))
 }
 
-impl Mesh {
-    pub fn new() -> Mesh {
+impl<VData, EData: Clone> Mesh<VData, EData> {
+    pub fn new() -> Mesh<VData, EData> {
         Mesh {
             verts: HashMap::new(),
             edges: HashMap::new(),
@@ -57,17 +57,17 @@ impl Mesh {
 
     /// Add a new isolated vertex and return its key. Fail and return
     /// None if there are no more vertex keys available.
-    pub fn add_vert(&mut self) -> Option<VKey> {
+    pub fn add_vert(&mut self, vdata: VData) -> Option<VKey> {
         if let Some(val) = self.vert_range_set.take_any_one() {
             let vkey = VKey::new(val);
-            self.verts.insert(vkey, Vert::new());
+            self.verts.insert(vkey, Vert::new(vdata));
             Some(vkey)
         } else {
             None
         }
     }
 
-    pub fn add_edge(&mut self, vk0: VKey, vk1: VKey) -> Option<EKey> {
+    pub fn add_edge(&mut self, vk0: VKey, vk1: VKey, edata: EData) -> Option<EKey> {
         // TODO(nicholasbishop): check that the verts are in the mesh,
         if vk0 == vk1 {
             None
@@ -78,7 +78,7 @@ impl Mesh {
                 let ekey = EKey::new(val);
                 self.verts.get_mut(&vk0).unwrap().push_edge(ekey);
                 self.verts.get_mut(&vk1).unwrap().push_edge(ekey);
-                self.edges.insert(ekey, Edge::new(vk0, vk1));
+                self.edges.insert(ekey, Edge::new(vk0, vk1, edata));
                 Some(ekey)
             } else {
                 None
@@ -86,14 +86,14 @@ impl Mesh {
         }
     }
 
-    pub fn add_face(&mut self, vk: &[VKey]) -> Option<FKey> {
+    pub fn add_face(&mut self, vk: &[VKey], edata: EData) -> Option<FKey> {
         let mut loops = Vec::with_capacity(vk.len());
         for i in 0..vk.len() {
             let vk0 = vk[i];
             let vk1 = vk[if i < (vk.len() - 1) { i + 1 } else { 0 }];
             // TODO(nicholasbishop): do more checking up front so that
             // edges don't get created on failure, or delete them after.
-            if let Some(ek) = self.add_edge(vk0, vk1) {
+            if let Some(ek) = self.add_edge(vk0, vk1, edata.clone()) {
                 loops.push(Loop { vert: vk0, edge: ek });
             } else {
                 // Error: failed to create edge
@@ -113,13 +113,14 @@ impl Mesh {
     }
 }
 
-pub struct Vert {
+pub struct Vert<VData> {
+    vdata: VData,
     edges: Vec<EKey>
 }
 
-impl Vert {
-    fn new() -> Vert {
-        Vert { edges: Vec::new() }
+impl<VData> Vert<VData> {
+    fn new(vdata: VData) -> Vert<VData> {
+        Vert { vdata: vdata, edges: Vec::new() }
     }
 
     /// Check if the edge is in the set of edges adjacent to this vert.
@@ -136,14 +137,15 @@ impl Vert {
     }
 }
 
-pub struct Edge {
+pub struct Edge<EData> {
+    edata: EData,
     verts: [VKey; 2],
     faces: Vec<FKey>
 }
 
-impl Edge {
-    fn new(vk0: VKey, vk1: VKey) -> Edge {
-        Edge { verts: [vk0, vk1], faces: Vec::new() }
+impl<EData> Edge<EData> {
+    fn new(vk0: VKey, vk1: VKey, edata: EData) -> Edge<EData> {
+        Edge { edata: edata, verts: [vk0, vk1], faces: Vec::new() }
     }
 
     /// Check if the vert is one of the two verts adjacent to this edge.
@@ -184,47 +186,50 @@ impl Face {
 mod test {
     use super::*;
 
+    // Placeholder for vert/edge/face data
+    const DAT: () = ();
+
     #[test]
     fn test_add_vert() {
-        let mut mesh = Mesh::new();
-        assert!(mesh.add_vert().is_some());
+        let mut mesh = Mesh::<_, ()>::new();
+        assert!(mesh.add_vert(DAT).is_some());
         assert!(!mesh.verts.is_empty());
     }
 
     #[test]
     fn test_add_edge() {
         let mut mesh = Mesh::new();
-        let a = mesh.add_vert().unwrap();
-        let b = mesh.add_vert().unwrap();
+        let a = mesh.add_vert(DAT).unwrap();
+        let b = mesh.add_vert(DAT).unwrap();
 
         // Add a valid edge
-        let e = mesh.add_edge(a, b).unwrap();
+        let e = mesh.add_edge(a, b, DAT).unwrap();
         assert!(mesh.verts[&a].edges.contains(&e));
         assert!(mesh.verts[&b].edges.contains(&e));
 
         // Edge from a vertex to the same vertex is not allowed
-        assert!(mesh.add_edge(a, a).is_none());
+        assert!(mesh.add_edge(a, a, DAT).is_none());
 
         // Duplicate edge should return the existing edge
-        assert_eq!(mesh.add_edge(a, b).unwrap(), e);
-        assert_eq!(mesh.add_edge(b, a).unwrap(), e);
+        assert_eq!(mesh.add_edge(a, b, DAT).unwrap(), e);
+        assert_eq!(mesh.add_edge(b, a, DAT).unwrap(), e);
     }
 
     #[test]
     fn test_add_face() {
         let mut mesh = Mesh::new();
-        let a = mesh.add_vert().unwrap();
-        let b = mesh.add_vert().unwrap();
-        let c = mesh.add_vert().unwrap();
+        let a = mesh.add_vert(DAT).unwrap();
+        let b = mesh.add_vert(DAT).unwrap();
+        let c = mesh.add_vert(DAT).unwrap();
 
         // Add a valid triangle
-        let fk = mesh.add_face(&[a, b, c]).unwrap();
+        let fk = mesh.add_face(&[a, b, c], DAT).unwrap();
         assert_eq!(mesh.edges.len(), 3);
         for lp in mesh.faces[&fk].loops.iter() {
             assert!(mesh.edges[&lp.edge].is_face_adjacent(fk));
         }
 
         // Add an invalid triangle with invalid edge
-        assert!(mesh.add_face(&[a, b, b]).is_none());
+        assert!(mesh.add_face(&[a, b, b], DAT).is_none());
     }
 }
