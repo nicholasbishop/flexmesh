@@ -87,8 +87,12 @@ impl Mesh {
         for i in 0..vk.len() {
             let vk0 = vk[i];
             let vk1 = vk[if i < (vk.len() - 1) { i + 1 } else { 0 }];
-            let ek = self.add_edge(vk0, vk1);
-            loops.push(Loop { vert: vk0, edge: ek.unwrap() });
+            if let Some(ek) = self.add_edge(vk0, vk1) {
+                loops.push(Loop { vert: vk0, edge: ek });
+            } else {
+                // Error: failed to create edge
+                return None;
+            }
         }
         if let Some(val) = self.face_range_set.take_any_one() {
             let fk = FKey::new(val);
@@ -190,7 +194,7 @@ mod test {
         let f = mesh.add_face(&[a, b, c]).unwrap();
         // TODO(nicholasbishop): check adj
 
-        // Add an invalid triangle with duplicate vertex
+        // Add an invalid triangle with invalid edge
         assert!(mesh.add_face(&[a, b, b]).is_none());
     }
 }
