@@ -5,9 +5,15 @@ use key::Key;
 use rangeset::{Range, RangeSet};
 use std::collections::HashMap;
 
-pub type VKey = Key;
-pub type EKey = Key;
-pub type FKey = Key;
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+struct VKeyMarker;
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+struct EKeyMarker;
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+struct FKeyMarker;
+pub type VKey = Key<VKeyMarker>;
+pub type EKey = Key<EKeyMarker>;
+pub type FKey = Key<FKeyMarker>;
 pub type FaceLen = u32;
 
 pub struct Mesh {
