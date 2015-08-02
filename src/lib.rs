@@ -191,7 +191,8 @@ mod test {
         let c = mesh.add_vert().unwrap();
 
         // Add a valid triangle
-        let f = mesh.add_face(&[a, b, c]).unwrap();
+        mesh.add_face(&[a, b, c]).unwrap();
+        assert_eq!(mesh.edges.len(), 3);
         // TODO(nicholasbishop): check adj
 
         // Add an invalid triangle with invalid edge
