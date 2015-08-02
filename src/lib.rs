@@ -81,6 +81,8 @@ impl Mesh {
         for i in 0..vk.len() {
             let vk0 = vk[i];
             let vk1 = vk[if i < (vk.len() - 1) { i + 1 } else { 0 }];
+            // TODO(nicholasbishop): do more checking up front so that
+            // edges don't get created on failure, or delete them after.
             if let Some(ek) = self.add_edge(vk0, vk1) {
                 loops.push(Loop { vert: vk0, edge: ek });
             } else {
@@ -90,6 +92,9 @@ impl Mesh {
         }
         if let Some(val) = self.face_range_set.take_any_one() {
             let fk = FKey::new(val);
+            for lp in loops.iter() {
+                self.edges.get_mut(&lp.edge).unwrap().push_face(fk);
+            }
             self.faces.insert(fk, Face::new(loops));
             Some(fk)
         } else {
@@ -123,16 +128,30 @@ impl Vert {
 
 pub struct Edge {
     verts: [VKey; 2],
-    // faces: Vec<FKey>
+    faces: Vec<FKey>
 }
 
 impl Edge {
     fn new(vk0: VKey, vk1: VKey) -> Edge {
-        Edge { verts: [vk0, vk1] }
+        Edge { verts: [vk0, vk1], faces: Vec::new() }
     }
 
+    /// Check if the vert is one of the two verts adjacent to this edge.
     fn is_vert_adjacent(&self, vk: VKey) -> bool {
         self.verts.contains(&vk)
+    }
+
+    /// Check if the face is in the set of edges adjacent to this edge.
+    pub fn is_face_adjacent(&self, fk: FKey) -> bool {
+        self.faces.contains(&fk)
+    }
+
+    /// Add face to set of faces adjacent to the edge. Does nothing if
+    /// the face is already in the set.
+    fn push_face(&mut self, fk: FKey) {
+        if !self.is_face_adjacent(fk) {
+            self.faces.push(fk);
+        }
     }
 }
 
