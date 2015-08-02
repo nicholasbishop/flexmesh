@@ -20,6 +20,11 @@ pub struct Mesh {
     face_range_set: RangeSet
 }
 
+// TODO
+fn new_key_range_set() -> RangeSet {
+    RangeSet::new(Range::new(0, 0xffffffff - 1))
+}
+
 impl Mesh {
     pub fn new() -> Mesh {
         Mesh {
@@ -27,10 +32,9 @@ impl Mesh {
             edges: HashMap::new(),
             faces: HashMap::new(),
 
-            // TODO
-            vert_range_set: RangeSet::new(Range::new(0, 0xffffffff - 1)),
-            edge_range_set: RangeSet::new(Range::new(0, 0xffffffff - 1)),
-            face_range_set: RangeSet::new(Range::new(0, 0xffffffff - 1))
+            vert_range_set: new_key_range_set(),
+            edge_range_set: new_key_range_set(),
+            face_range_set: new_key_range_set()
         }
     }
 
