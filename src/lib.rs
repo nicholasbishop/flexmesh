@@ -16,10 +16,10 @@ pub type EKey = Key<EKeyMarker>;
 pub type FKey = Key<FKeyMarker>;
 pub type FaceLen = u32;
 
-pub struct Mesh<VData, EData> {
+pub struct Mesh<VData, EData, FData> {
     verts: HashMap<VKey, Vert<VData>>,
     edges: HashMap<EKey, Edge<EData>>,
-    faces: HashMap<FKey, Face>,
+    faces: HashMap<FKey, Face<FData>>,
 
     vert_range_set: RangeSet,
     edge_range_set: RangeSet,
@@ -31,8 +31,8 @@ fn new_key_range_set() -> RangeSet {
     RangeSet::new(Range::new(0, 0xffffffff - 1))
 }
 
-impl<VData, EData: Clone> Mesh<VData, EData> {
-    pub fn new() -> Mesh<VData, EData> {
+impl<VData: Clone, EData: Clone, FData: Clone> Mesh<VData, EData, FData> {
+    pub fn new() -> Mesh<VData, EData, FData> {
         Mesh {
             verts: HashMap::new(),
             edges: HashMap::new(),
@@ -86,7 +86,7 @@ impl<VData, EData: Clone> Mesh<VData, EData> {
         }
     }
 
-    pub fn add_face(&mut self, vk: &[VKey], edata: EData) -> Option<FKey> {
+    pub fn add_face(&mut self, vk: &[VKey], edata: EData, fdata: FData) -> Option<FKey> {
         let mut loops = Vec::with_capacity(vk.len());
         for i in 0..vk.len() {
             let vk0 = vk[i];
@@ -105,7 +105,7 @@ impl<VData, EData: Clone> Mesh<VData, EData> {
             for lp in loops.iter() {
                 self.edges.get_mut(&lp.edge).unwrap().push_face(fk);
             }
-            self.faces.insert(fk, Face::new(loops));
+            self.faces.insert(fk, Face::new(loops, fdata));
             Some(fk)
         } else {
             None
@@ -172,13 +172,14 @@ pub struct Loop {
     edge: EKey,
 }
 
-pub struct Face {
+pub struct Face<FData> {
+    fdata: FData,
     loops: Vec<Loop>
 }
 
-impl Face {
-    fn new(loops: Vec<Loop>) -> Face {
-        Face { loops: loops }
+impl<FData> Face<FData> {
+    fn new(loops: Vec<Loop>, fdata: FData) -> Face<FData> {
+        Face { fdata: fdata, loops: loops }
     }
 }
 
@@ -191,14 +192,14 @@ mod test {
 
     #[test]
     fn test_add_vert() {
-        let mut mesh = Mesh::<_, ()>::new();
+        let mut mesh = Mesh::<_, (), ()>::new();
         assert!(mesh.add_vert(DAT).is_some());
         assert!(!mesh.verts.is_empty());
     }
 
     #[test]
     fn test_add_edge() {
-        let mut mesh = Mesh::new();
+        let mut mesh = Mesh::<_, _, ()>::new();
         let a = mesh.add_vert(DAT).unwrap();
         let b = mesh.add_vert(DAT).unwrap();
 
@@ -223,13 +224,13 @@ mod test {
         let c = mesh.add_vert(DAT).unwrap();
 
         // Add a valid triangle
-        let fk = mesh.add_face(&[a, b, c], DAT).unwrap();
+        let fk = mesh.add_face(&[a, b, c], DAT, DAT).unwrap();
         assert_eq!(mesh.edges.len(), 3);
         for lp in mesh.faces[&fk].loops.iter() {
             assert!(mesh.edges[&lp.edge].is_face_adjacent(fk));
         }
 
         // Add an invalid triangle with invalid edge
-        assert!(mesh.add_face(&[a, b, b], DAT).is_none());
+        assert!(mesh.add_face(&[a, b, b], DAT, DAT).is_none());
     }
 }
