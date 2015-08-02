@@ -212,9 +212,11 @@ mod test {
         let c = mesh.add_vert().unwrap();
 
         // Add a valid triangle
-        mesh.add_face(&[a, b, c]).unwrap();
+        let fk = mesh.add_face(&[a, b, c]).unwrap();
         assert_eq!(mesh.edges.len(), 3);
-        // TODO(nicholasbishop): check adj
+        for lp in mesh.faces[&fk].loops.iter() {
+            assert!(mesh.edges[&lp.edge].is_face_adjacent(fk));
+        }
 
         // Add an invalid triangle with invalid edge
         assert!(mesh.add_face(&[a, b, b]).is_none());
