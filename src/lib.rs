@@ -1,6 +1,3 @@
-// TODO(nicholasbishop): remove this
-#![allow(dead_code)]
-
 mod key;
 mod rangeset;
 
@@ -11,13 +8,11 @@ use std::collections::HashMap;
 pub type VKey = Key;
 pub type EKey = Key;
 pub type FKey = Key;
-pub type LKey = Key;
 pub type FaceLen = u32;
 
 pub struct Mesh {
     verts: HashMap<VKey, Vert>,
     edges: HashMap<EKey, Edge>,
-    loops: HashMap<LKey, Loop>,
     faces: HashMap<FKey, Face>,
 
     vert_range_set: RangeSet,
@@ -30,7 +25,6 @@ impl Mesh {
         Mesh {
             verts: HashMap::new(),
             edges: HashMap::new(),
-            loops: HashMap::new(),
             faces: HashMap::new(),
 
             // TODO
@@ -72,9 +66,9 @@ impl Mesh {
         } else {
             if let Some(val) = self.edge_range_set.take_any_one() {
                 let ekey = EKey::new(val);
-                self.verts.get_mut(&vk0).unwrap().edges.push(ekey);
-                self.verts.get_mut(&vk1).unwrap().edges.push(ekey);
-                self.edges.insert(ekey, Edge { verts: [vk0, vk1] });
+                self.verts.get_mut(&vk0).unwrap().push_edge(ekey);
+                self.verts.get_mut(&vk1).unwrap().push_edge(ekey);
+                self.edges.insert(ekey, Edge::new(vk0, vk1));
                 Some(ekey)
             } else {
                 None
@@ -133,6 +127,10 @@ pub struct Edge {
 }
 
 impl Edge {
+    fn new(vk0: VKey, vk1: VKey) -> Edge {
+        Edge { verts: [vk0, vk1] }
+    }
+
     fn is_vert_adjacent(&self, vk: VKey) -> bool {
         self.verts.contains(&vk)
     }
