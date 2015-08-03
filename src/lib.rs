@@ -153,6 +153,11 @@ impl<VData: Clone, EData: Clone, FData: Clone> Mesh<VData, EData, FData> {
             None
         }
     }
+
+    pub fn delete_face(&mut self, fk: FKey) {
+        self.faces.remove(&fk);
+        self.face_range_set.release_one(fk.value());
+    }
 }
 
 pub struct Vert<VData> {

@@ -47,4 +47,8 @@ impl RangeSet {
             None
         }
     }
+
+    pub fn release_one(&mut self, _: NumType) {
+        // TODO(nicholasbishop): implement this
+    }
 }
