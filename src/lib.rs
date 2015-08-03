@@ -48,28 +48,28 @@ impl<VData: Clone, EData: Clone, FData: Clone> Mesh<VData, EData, FData> {
         }
     }
 
-    pub fn vert_data(&self, vk: VKey) -> Option<&VData> {
-        self.verts.get(&vk).map(|v| &v.vdata)
+    pub fn get_vert(&self, vk: VKey) -> Option<&Vert<VData>> {
+        self.verts.get(&vk)
     }
 
-    pub fn edge_data(&self, ek: EKey) -> Option<&EData> {
-        self.edges.get(&ek).map(|e| &e.edata)
+    pub fn get_edge(&self, ek: EKey) -> Option<&Edge<EData>> {
+        self.edges.get(&ek)
     }
 
-    pub fn face_data(&self, fk: FKey) -> Option<&FData> {
-        self.faces.get(&fk).map(|f| &f.fdata)
+    pub fn get_face(&self, fk: FKey) -> Option<&Face<FData>> {
+        self.faces.get(&fk)
     }
 
-    pub fn vert_data_mut(&mut self, vk: VKey) -> Option<&mut VData> {
-        self.verts.get_mut(&vk).map(|v| &mut v.vdata)
+    pub fn get_vert_data(&mut self, vk: VKey) -> Option<&mut Vert<VData>> {
+        self.verts.get_mut(&vk)
     }
 
-    pub fn edge_data_mut(&mut self, ek: EKey) -> Option<&mut EData> {
-        self.edges.get_mut(&ek).map(|e| &mut e.edata)
+    pub fn get_edge_data(&mut self, ek: EKey) -> Option<&mut Edge<EData>> {
+        self.edges.get_mut(&ek)
     }
 
-    pub fn face_data_mut(&mut self, fk: FKey) -> Option<&mut FData> {
-        self.faces.get_mut(&fk).map(|f| &mut f.fdata)
+    pub fn get_face_data(&mut self, fk: FKey) -> Option<&mut Face<FData>> {
+        self.faces.get_mut(&fk)
     }
 
     /// Return the edge between two verts, or None if no such edge
@@ -210,8 +210,8 @@ impl<EData> Edge<EData> {
 }
 
 pub struct Loop {
-    vert: VKey,
-    edge: EKey,
+    pub vert: VKey,
+    pub edge: EKey
 }
 
 pub struct Face<FData> {
@@ -222,6 +222,10 @@ pub struct Face<FData> {
 impl<FData> Face<FData> {
     fn new(loops: Vec<Loop>, fdata: FData) -> Face<FData> {
         Face { fdata: fdata, loops: loops }
+    }
+
+    pub fn get_loops(&self) -> &Vec<Loop> {
+        &self.loops
     }
 }
 
