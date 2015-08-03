@@ -2,3 +2,5 @@
 name = "flexmesh"
 version = "0.1.0"
 authors = ["Nicholas Bishop <nicholasbishop@gmail.com>"]
+license = "Apache-2.0"
+description = "Mutable mesh structure with persistent adjacency data and n-gon support"
