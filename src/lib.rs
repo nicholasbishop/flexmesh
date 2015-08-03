@@ -170,6 +170,10 @@ impl<VData> Vert<VData> {
         self.edges.contains(&ek)
     }
 
+    pub fn get_edges(&self) -> &Vec<EKey> {
+        &self.edges
+    }
+
     /// Add edge to set of edges adjacent to the vert. Does nothing if
     /// the edge is already in the set.
     fn push_edge(&mut self, ek: EKey) {
@@ -198,6 +202,14 @@ impl<EData> Edge<EData> {
     /// Check if the face is in the set of edges adjacent to this edge.
     pub fn is_face_adjacent(&self, fk: FKey) -> bool {
         self.faces.contains(&fk)
+    }
+
+    pub fn get_verts(&self) -> &[VKey; 2] {
+        &self.verts
+    }
+
+    pub fn get_faces(&self) -> &Vec<FKey> {
+        &self.faces
     }
 
     /// Add face to set of faces adjacent to the edge. Does nothing if
