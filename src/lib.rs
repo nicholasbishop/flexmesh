@@ -97,6 +97,47 @@ impl<VData: Clone, EData: Clone, FData: Clone> Mesh<VData, EData, FData> {
         adj
     }
 
+    /// Get edges that are one face removed from the specified
+    /// vertex. The order is arbitrary.
+    pub fn vert_edge_ring_soup(&self, vk: VKey) -> Vec<EKey> {
+        let mut edges = Vec::new();
+        for fk in self.vert_adjacent_faces(vk).iter() {
+            for lp in self.faces[fk].get_loops() {
+                if !(self.edges[&lp.edge].is_vert_adjacent(vk) ||
+                     edges.contains(&lp.edge)) {
+                    edges.push(lp.edge);
+                }
+            }
+        }
+        edges
+    }
+
+    pub fn separate_connected_edges(&self, mut input: Vec<EKey>) -> Vec<Vec<EKey>> {
+        let mut groups = Vec::new();
+
+        while !input.is_empty() {
+            let mut stack = Vec::new();
+            let mut visited = Vec::new();
+            let mut group = Vec::new();
+            stack.push(self.edges[&input[0]].verts[0]);
+            while let Some(vk) = stack.pop() {
+                if !visited.contains(&vk) {
+                    visited.push(vk);
+                    for ek in self.verts[&vk].edges.iter() {
+                        if input.contains(ek) {
+                            stack.push(self.edges[ek].other_vert(vk).unwrap());
+                            group.push(*ek);
+                            input.retain(|elem| elem != ek);
+                        }
+                    }
+                }
+            }
+            groups.push(group);
+        }
+
+        groups
+    }
+
     /// Add a new isolated vertex and return its key. Fail and return
     /// None if there are no more vertex keys available.
     pub fn add_vert(&mut self, vdata: VData) -> Option<VKey> {
@@ -217,6 +258,18 @@ impl<EData> Edge<EData> {
         &self.faces
     }
 
+    /// Given one of the edge's verts, return the other one. If the
+    /// input is not one if the edge's verts, return None.
+    pub fn other_vert(&self, vk: VKey) -> Option<VKey> {
+        if vk == self.verts[0] {
+            Some(self.verts[1])
+        } else if vk == self.verts[1] {
+            Some(self.verts[0])
+        } else {
+            None
+        }
+    }
+
     /// Add face to set of faces adjacent to the edge. Does nothing if
     /// the face is already in the set.
     fn push_face(&mut self, fk: FKey) {
@@ -328,5 +381,33 @@ mod test {
         let face = &mesh.faces[&fk];
 
         assert_eq!(face.loops.len(), 5);
+    }
+
+    #[test]
+    fn test_separate_connected_edges() {
+        let mut mesh = Mesh::<_, _, ()>::new();
+        let vk0 = mesh.add_vert(DAT).unwrap();
+        let vk1 = mesh.add_vert(DAT).unwrap();
+        let ek0 = mesh.add_edge(vk0, vk1, DAT).unwrap();
+
+        let vk2 = mesh.add_vert(DAT).unwrap();
+        let vk3 = mesh.add_vert(DAT).unwrap();
+        let vk4 = mesh.add_vert(DAT).unwrap();
+        let vk5 = mesh.add_vert(DAT).unwrap();
+        let ek1 = mesh.add_edge(vk2, vk3, DAT).unwrap();
+        let ek2 = mesh.add_edge(vk3, vk4, DAT).unwrap();
+        let ek3 = mesh.add_edge(vk3, vk5, DAT).unwrap();
+        
+        let ce = mesh.separate_connected_edges(vec![ek0, ek1, ek2, ek3]);
+        assert_eq!(ce.len(), 2);
+        assert!(ce[0].len() == 1 || ce[1].len() == 1);
+        let g0 = if ce[0].len() == 1 { &ce[0] } else { &ce[1] };
+        let g1 = if ce[0].len() == 1 { &ce[1] } else { &ce[0] };
+
+        assert_eq!(g0, &[ek0]);
+        assert_eq!(g1.len(), 3);
+        assert!(g1.contains(&ek1));
+        assert!(g1.contains(&ek2));
+        assert!(g1.contains(&ek3));
     }
 }
