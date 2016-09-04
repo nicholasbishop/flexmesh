@@ -5,15 +5,17 @@ use key::Key;
 use rangeset::{Range, RangeSet};
 use std::collections::HashMap;
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-struct VKeyMarker;
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-struct EKeyMarker;
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-struct FKeyMarker;
-pub type VKey = Key<VKeyMarker>;
-pub type EKey = Key<EKeyMarker>;
-pub type FKey = Key<FKeyMarker>;
+mod detail {
+    #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+    pub struct VKeyMarker;
+    #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+    pub struct EKeyMarker;
+    #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+    pub struct FKeyMarker;
+}
+pub type VKey = Key<detail::VKeyMarker>;
+pub type EKey = Key<detail::EKeyMarker>;
+pub type FKey = Key<detail::FKeyMarker>;
 pub type FaceLen = u32;
 
 /// Editable mesh with persistent adjacency data. Modeled loosely
